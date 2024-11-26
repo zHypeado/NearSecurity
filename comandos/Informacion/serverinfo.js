@@ -4,7 +4,7 @@ module.exports = {
     nombre: "serverinfo",
     category: "Información",
     premium: false,
-    alias: ["si", "server"],
+    alias: ["si"],
     description: "Muestra información detallada sobre el servidor.",
     usage: ['<prefix>serverinfo'],
     run: async (client, message, args, _guild) => {

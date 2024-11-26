@@ -1,6 +1,6 @@
 {
   "name": "nearsecurity",
-  "version": "v1.0.2-FIX2",
+  "version": "v1.0.4",
   "description": "Bot de seguridad.",
   "main": "index.js",
   "scripts": {
