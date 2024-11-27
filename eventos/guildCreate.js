@@ -136,8 +136,6 @@ module.exports = async (client, guild) => {
                                     `> <:Partner_Seagull:1279260613956075623> ¿Quieres ser Partner? Únete a nuestro [soporte](https://discord.gg/a7FqNnHk2m) y habla con los staff.\n\n<a:a_moderation:953183975583670302> **AVISO DE SEGURIDAD:** Instamos que le den el rol más alto al bot, si necesitan poner a alguien en whitelist, utilicen **n!whitelist**, pero después pasa que raidean el servidor y el bot no puede hacer nada.`
                                 )
                                 .setColor("#FDFDFD")
-                                .addField("Bots verificados", verifiedBotNames, false) // Incluir bots verificados aquí
-                                .addField("Bots no verificados", nonVerifiedBotNames, false); // Incluir bots no verificados aquí
 
                             founder.send({ embeds: [welcomeEmbed] })
                                 .catch(err => console.error('Error enviando el mensaje de bienvenida al fundador:', err));
