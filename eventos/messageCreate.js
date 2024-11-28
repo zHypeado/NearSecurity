@@ -129,40 +129,6 @@ if (message.webhookId) {
     return;
 }
 
-
-// Código para manejar mensajes de usuarios
-if (!message.author.bot) {
-    // Aquí iría el código para manejar ataques de raid por parte de usuarios
-    if (_guild.protection.antiraid.enable === true && message.member.moderatable) {
-        let newMessage = message.content.toLowerCase();
-
-        // Palabras clave asociadas a raids
-        const raidKeywords = ['raided', 'pwned', 'hacked', 'clowned', '@everyone', 'discord.gg'];
-        let detectedWords = 0;
-
-        // Contar cuántas palabras clave se detectan en el mensaje
-        raidKeywords.forEach(keyword => {
-            if (newMessage.includes(keyword)) {
-                detectedWords++;
-            }
-        });
-
-        // Si se detectan 2 o más palabras clave, se procede con la sanción
-        if (detectedWords >= 2) {
-            message.member.ban({ reason: 'Posible raider. (Mensajes de raid)' }).then(async () => {
-                // Esperar 2 segundos antes de eliminar el mensaje
-                setTimeout(() => {
-                    message.delete();
-                }, 2000);
-                // Enviar mensaje de sanción
-                message.channel.send(`Se ha detectado un raid, ha sido sancionado el usuario ${message.author.tag} (${message.author.id}).`);
-            }).catch(err => {
-                console.error(`Error al intentar banear al usuario: ${err}`);
-            });
-        }
-    }
-}
-
     if(message.author.bot) return;
     // Ping al bot:
 	async function ping() {
@@ -177,7 +143,7 @@ if (!message.author.bot) {
                 totalSeconds %= 3600;
                 let minutes = Math.floor(totalSeconds / 60);
                 let seconds = Math.floor(totalSeconds % 60);
-                message.channel.send({ embeds: [ new Discord.MessageEmbed().setColor("#FCFDFF").setDescription('`NearSecurity ' + version + '` es un bot basado en [SPAgency](https://github.com/devEthan6737/nearsecurity).\n\n<a:a_secure:953907590004355103> **Un bot __Antiraid__ eficiente para proteger a tu servidor, comunidad o empresa.**\n<:uo_next:955381240293392445> *Usá `n!ayuda` para comenzar*.\n\n<a:a_Filter:953182746182828042> Llevo encendido **' + days + ' días**, **' + hours + ' horas**, **' + minutes + ' minutos** y **' + seconds + ' segundos**, además de que me reinicio seguido para lanzar mis actualizaciones.\n\n<:emote:992383379024650341> Puedes invitarme dando [click aquí](https://discord.com/oauth2/authorize?client_id=1277124708369961021&permissions=8&integration_type=0&scope=bot+applications.commands), recomendamos entrar a nuestro soporte.').setFooter('NearSecurity').setImage("https://cdn.discordapp.com/attachments/1277170460924317777/1279309614520864820/nearsecurity.jpg") ], components: [
+                message.channel.send({ embeds: [ new Discord.MessageEmbed().setColor("#FCFDFF").setDescription('`NearSecurity ' + version + '` es un bot basado en [SPAgency](https://github.com/devEthan6737/SPAgency).\n\n<a:a_secure:953907590004355103> **Un bot __Antiraid__ eficiente para proteger a tu servidor, comunidad o empresa.**\n<:uo_next:955381240293392445> *Usá `n!ayuda` para comenzar*.\n\n<a:a_Filter:953182746182828042> Llevo encendido **' + days + ' días**, **' + hours + ' horas**, **' + minutes + ' minutos** y **' + seconds + ' segundos**, además de que me reinicio seguido para lanzar mis actualizaciones.\n\n<:emote:992383379024650341> Puedes invitarme dando [click aquí](https://discord.com/oauth2/authorize?client_id=1277124708369961021&permissions=8&integration_type=0&scope=bot+applications.commands), recomendamos entrar a nuestro soporte.').setFooter('NearSecurity').setImage("https://cdn.discordapp.com/attachments/1277170460924317777/1279309614520864820/nearsecurity.jpg") ], components: [
                     new Discord.MessageActionRow()
                     .addComponents(new Discord.MessageButton()
                         .setLabel('Soporte oficial')
