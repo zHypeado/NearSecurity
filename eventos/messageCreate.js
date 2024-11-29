@@ -129,6 +129,175 @@ if (message.webhookId) {
     return;
 }
 
+//una parte del antiraid new
+const botAlerts = new Map();
+
+if (message.author.bot && _guild.protection.antiraid.enable && message.member.moderatable) {
+    const raidKeywords = ['raided', 'pwned', 'hacked', 'clowned', '@everyone', 'discord.gg', 'squad', ''];
+    const MAX_KEYWORDS = 3;
+    const MAX_MENTIONS = 5;
+    const SPAM_TIMEFRAME = 5000;
+
+    const newMessage = message.content.toLowerCase();
+    const countKeywords = (message, keywords) =>
+        keywords.reduce((count, keyword) => {
+            const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+            return count + (regex.test(message) ? 1 : 0);
+        }, 0);
+
+    const hasRepeatedMessages = () =>
+        message.channel.messages.cache.filter(
+            (msg) =>
+                msg.author.id === message.author.id &&
+                msg.createdTimestamp > Date.now() - SPAM_TIMEFRAME &&
+                msg.content === message.content
+        ).size >= 3;
+
+    const detectedKeywords = countKeywords(newMessage, raidKeywords);
+    const mentionCount = message.mentions.users.size + message.mentions.roles.size;
+
+    if (
+        detectedKeywords >= MAX_KEYWORDS ||
+        mentionCount >= MAX_MENTIONS ||
+        hasRepeatedMessages()
+    ) {
+        const alertCount = (botAlerts.get(message.author.id) || 0) + 1;
+        botAlerts.set(message.author.id, alertCount);
+
+        const reason = `
+        - Palabras clave detectadas: ${detectedKeywords}
+        - Menciones: ${mentionCount}
+        - Mensajes repetidos: ${hasRepeatedMessages() ? 'Sí' : 'No'}
+        `;
+
+        const alertEmbed = {
+            color: "#f0f0f0",
+            title: '⚠️ Alerta de actividad sospechosa de un bot',
+            description: `El bot **${message.author.tag}** (${message.author.id}) ha sido marcado.`,
+            fields: [
+                { name: 'Razón', value: reason.trim() },
+                { name: 'Alerta número', value: `${alertCount}`, inline: true },
+                { name: 'Servidor', value: `${message.guild.name} (${message.guild.id})`, inline: true }
+            ],
+            timestamp: new Date()
+        };
+
+        const owner = await message.guild.fetchOwner();
+        message.channel.send({ embeds: [alertEmbed] });
+        owner.send({ embeds: [alertEmbed] }).catch((err) =>
+            console.error(`No se pudo enviar mensaje al fundador: ${err}`)
+        );
+
+        const logChannelId = 'YOUR-STAFF-LOGS-ID';
+        const logGuildId = 'YOUR-STAFF-SERVER-ID';
+        const logGuild = client.guilds.cache.get(logGuildId);
+        const logChannel = logGuild?.channels.cache.get(logChannelId);
+
+        if (logChannel) {
+            const logEmbed = {
+                color: "#f0f0f0",
+                title: '📜 ALERTA DE POSIBLE RAID',
+                description: `@everyone\nSe ha detectado actividad sospechosa de un bot en el servidor **${message.guild.name}**.`,
+                fields: [
+                    { name: 'Servidor', value: `${message.guild.name} (${message.guild.id})` },
+                    { name: 'Bot', value: `${message.author.tag} (${message.author.id})` },
+                    { name: 'Razón', value: reason.trim() },
+                    { name: 'Alerta número', value: `${alertCount}`, inline: true }
+                ],
+                timestamp: new Date()
+            };
+            logChannel.send({ embeds: [logEmbed] });
+        } else {
+            console.error('No se pudo encontrar el canal de logs.');
+        }
+
+        if (alertCount === 2) {
+            const sensitivePermissions = [
+                'Administrator',
+                'ManageGuild',
+                'ManageRoles',
+                'ManageWebhooks',
+                'CreateInstantInvite',
+                'ManageChannels'
+            ];
+            const updatedPermissions = message.member.permissions.toArray().filter(
+                (perm) => !sensitivePermissions.includes(perm)
+            );
+
+            await message.member.roles.cache.forEach((role) => {
+                role.setPermissions(updatedPermissions).catch((err) =>
+                    console.error(`Error al modificar permisos: ${err}`)
+                );
+            });
+
+            const revokeEmbed = {
+                color: "#f0f0f0",
+                title: '⚠️ Permisos Eliminados',
+                description: `Se han revocado permisos sensibles del bot **${message.author.tag}**.`,
+                timestamp: new Date()
+            };
+            message.channel.send({ embeds: [revokeEmbed] });
+        }
+
+        if (alertCount >= 3) {
+            message.member
+                .ban({
+                    reason: `Sospecha de raid detectada tras múltiples alertas. Razón: ${reason}`
+                })
+                .then(() => {
+                    const banEmbed = {
+                        color: "#f0f0f0",
+                        title: '🚨 Bot Baneado',
+                        description: `El bot **${message.author.tag}** ha sido expulsado por actividad sospechosa.`,
+                        timestamp: new Date()
+                    };
+                    message.channel.send({ embeds: [banEmbed] });
+
+                    if (logChannel) {
+                        logChannel.send({
+                            content: '@everyone',
+                            embeds: [banEmbed]
+                        });
+                    }
+                })
+                .catch((err) =>
+                    console.error(`Error al intentar banear al bot: ${err}`)
+                );
+        }
+    }
+}
+
+//evitar nitro y esas estafas kks (código de spagency mejorado)
+if (_guild.protection.antiraid.enable && message.member.moderatable) {
+    const newMessage = message.content.toLowerCase();
+
+    const scamKeywords = ['free', 'steam', 'discord', 'nitro', 'gift', 'promo', 'hack', 'giveaway'];
+    const hasScamKeywords = scamKeywords.some(keyword => newMessage.includes(keyword)) && newMessage.includes('http');
+
+    if (hasScamKeywords) {
+        try {
+            await message.member.timeout(ms('7d'), 'Usuario sospechoso de distribuir nitro falso y contenido no deseado.');
+
+            await message.delete();
+
+            message.reply({
+                content: `⚠️ **Alerta de seguridad**: Un usuario sospechoso ha sido detectado ofreciendo **nitro falso** o enlaces maliciosos en el servidor (ID: ${message.author.id}). El usuario ha sido **mutado** durante 7 días. Acciones adicionales serán tomadas si persiste.`
+            });
+
+            // Obtener al fundador del servidor
+            const owner = await message.guild.fetchOwner();
+            const ownerMessage = `⚠️ **Alerta de seguridad**: El usuario **${message.author.tag}** (${message.author.id}) fue detectado enviando un mensaje con contenido sospechoso en el servidor **${message.guild.name}**. El mensaje incluía:\n\n"${message.content}"\n\nEl usuario ha sido **mutado durante 7 días** debido a esto.`;
+
+            // Enviar mensaje directo al fundador
+            await owner.send(ownerMessage);
+            
+        } catch (e) {
+            console.error('Error al poner timeout al usuario:', e);
+        }
+    }
+}
+
+
     if(message.author.bot) return;
     // Ping al bot:
 	async function ping() {
@@ -331,30 +500,6 @@ if (message.webhookId) {
                 }).catch(e => {});
             }
         }
-
-        //antispam raid bot
-        if (_guild.protection.antiraid.enable == true && message.member.moderatable) {
-            let newMessage = `${message.content}`.toLowerCase();
-
-            const raidKeywords = ['raided', 'pwned', 'hacked', 'clowned', '@everyone', 'discord.gg'];
-            let detectedWords = 0;
-
-            raidKeywords.forEach(keyword => {
-                if (newMessage.includes(keyword)) {
-                    detectedWords++;
-                }
-            });
-
-            if (detectedWords >= 2) {
-                message.member.ban({ reason: 'Posible raider. (Mensajes de raid)' }).then(() => {
-                    setTimeout(() => {
-                        message.delete();
-                    }, 2000);
-                    message.reply({ content: 'Un usuario envió posibles mensajes de raid (`' + message.author.id + '`), lo he baneado.' });
-                }).catch(e => {});
-            }
-        }
-
 
         // Disable raidmode:
         if(_guild.protection.raidmode.enable == true && _guild.protection.raidmode.activedDate + ms(_guild.protection.raidmode.timeToDisable) <= Date.now()) {
