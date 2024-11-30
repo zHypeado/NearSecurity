@@ -271,10 +271,12 @@ if (message.author.bot && _guild.protection.antiraid.enable && message.member.mo
 if (_guild.protection.antiraid.enable && message.member.moderatable) {
     const newMessage = message.content.toLowerCase();
 
-    const scamKeywords = ['free', 'steam', 'discord', 'nitro', 'gift', 'promo', 'hack', 'giveaway'];
-    const hasScamKeywords = scamKeywords.some(keyword => newMessage.includes(keyword)) && newMessage.includes('http');
+    const scamKeywords = ['free', 'steam', 'nitro', 'gift', 'promo', 'hack', 'giveaway'];
+    const matchedKeywords = scamKeywords.filter(keyword => newMessage.includes(keyword));
 
-    if (hasScamKeywords) {
+    const hasMultipleScamKeywords = matchedKeywords.length >= 2 && newMessage.includes('http');
+
+    if (hasMultipleScamKeywords) {
         try {
             await message.member.timeout(ms('7d'), 'Usuario sospechoso de distribuir nitro falso y contenido no deseado.');
 
@@ -284,11 +286,9 @@ if (_guild.protection.antiraid.enable && message.member.moderatable) {
                 content: `⚠️ **Alerta de seguridad**: Un usuario sospechoso ha sido detectado ofreciendo **nitro falso** o enlaces maliciosos en el servidor (ID: ${message.author.id}). El usuario ha sido **mutado** durante 7 días. Acciones adicionales serán tomadas si persiste.`
             });
 
-            // Obtener al fundador del servidor
             const owner = await message.guild.fetchOwner();
             const ownerMessage = `⚠️ **Alerta de seguridad**: El usuario **${message.author.tag}** (${message.author.id}) fue detectado enviando un mensaje con contenido sospechoso en el servidor **${message.guild.name}**. El mensaje incluía:\n\n"${message.content}"\n\nEl usuario ha sido **mutado durante 7 días** debido a esto.`;
 
-            // Enviar mensaje directo al fundador
             await owner.send(ownerMessage);
             
         } catch (e) {
