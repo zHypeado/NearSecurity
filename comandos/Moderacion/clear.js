@@ -5,7 +5,7 @@ module.exports = {
 	nombre: 'clear',
 	category: 'Moderación',
     premium: false,
-	alias: [],
+	alias: ["purge"],
 	description: 'Borra los mensajes de un canal de forma rápida.',
 	usage: ['<prefix>clear <messagesAmount>'],
     run: async (client, message, args, _guild) => {
@@ -45,7 +45,7 @@ module.exports = {
 
         try{
             if(parseInt(args[0]) > 100) {
-                message.reply(LANG.commands.mod.clear.message3.replace('<amopunt>', args[0]));
+                message.reply(LANG.commands.mod.clear.message3.replace('<amount>', args[0]));
                 if(clear.has(message.guild.id))return message.reply(LANG.commands.mod.clear.message4.replace('<amount>', await clear.get(message.guild.id)));
                 clear.set(message.guild.id, parseInt(args[0]));
                 function c(amount) {
