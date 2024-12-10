@@ -22,7 +22,7 @@ module.exports = {
                 kickMalicious: { enable: false, rememberEntrities: [] },
                 ownSystem: { enable: false },
                 antiInfecteds: { enable: true },
-                antiBotRaid: { enable: true },
+                antiBotSpam: { enable: true },
                 verification: { enable: false },
                 cannotEnterTwice: { enable: false, users: [] },
                 purgeWebhooksAttacks: { enable: false, amount: 0, rememberOwners: 'Nadie' },
