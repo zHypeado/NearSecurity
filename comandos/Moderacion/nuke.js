@@ -1,61 +1,80 @@
+const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
 const Discord = require('discord.js-light');
+const Blacklist = require('../../schemas/blacklist'); 
 
 module.exports = { 
-	nombre: 'nuke',
-	category: 'Moderación',
+    nombre: 'nuke',
+    category: 'Moderación',
     premium: false,
-	alias: [],
-	description: 'Elimina todos los mensajes de un canal.',
-	usage: ['<prefix>nuke'],
-	run: async (client, message, _guild) => {
-	    
-	            const Blacklist = require('../../schemas/blacklist'); 
+    alias: ["nukechannel"],
+    description: 'Elimina todos los mensajes de un canal.',
+    usage: ['<prefix>nuke'],
+    run: async (client, message, _guild) => {
+
         async function isUserBlacklisted(client, userId) {
-    try {
-        const user = await Blacklist.findOne({ userId });
-        console.log("Resultado de la búsqueda de blacklist:", user); // Registro para verificar si encuentra al usuario
-        
-        // Si el usuario existe en la blacklist pero tiene un removedAt definido, ya no está en blacklist
-        if (user && user.removedAt == null) {
-            return true; // Usuario sigue en la blacklist
+            try {
+                const user = await Blacklist.findOne({ userId });
+                console.log("Resultado de la búsqueda de blacklist:", user);
+                if (user && user.removedAt == null) {
+                    return true;
+                }
+                return false;
+            } catch (err) {
+                console.error('Error buscando en la blacklist:', err);
+                return false;
+            }
         }
 
-        return false; // Usuario no está en blacklist o fue removido
-    } catch (err) {
-        console.error('Error buscando en la blacklist:', err);
-        return false; // En caso de error, asume que no está en blacklist
-    }
-}
-        // Verificar si el usuario está en la blacklist
         const isBlacklisted = await isUserBlacklisted(client, message.author.id);
-        console.log("¿Está en blacklist?", isBlacklisted); // Registro para ver si detecta correctamente
+        console.log("¿Está en blacklist?", isBlacklisted); 
         if (isBlacklisted) {
             return message.reply('No puedes usar este comando porque estás en la lista negra.');
         }
 
-		if(!message.guild.members.me.permissions.has('MANAGE_CHANNELS')) return message.channel.send(LANG.data.permissionsChannelsMe);
-		if(!message.member.permissions.has('MANAGE_CHANNELS'))return message.channel.send(LANG.data.permissionsChannelsU);
+        if (!message.guild.members.me.permissions.has('MANAGE_CHANNELS')) return message.channel.send(LANG.data.permissionsChannelsMe);
+        if (!message.member.permissions.has('MANAGE_CHANNELS')) return message.channel.send(LANG.data.permissionsChannelsU);
 
-        message.reply({ content: "Estoy a punto de clonar este canal, ¡La acción es irreversible!\n\n¿Sabes lo que haces? Si estás seguro escribe `Seguro`" });
-        let collector = message.channel.createMessageCollector({ time: 15000 });
-        collector.on('collect', m => {
-            if(m.content == '')return;
-            if(m.author.id == message.author.id) {
-                if(m.content.toLowerCase() == 'seguro') {
-                    message.channel.clone({ parent: message.channel.parentId, positon: message.channel.position }).then(nuke => {
-                        message.channel.delete();
-                        nuke.setPosition(message.channel.position).then(terminado => {
-                            terminado.send({ content: '✅ | `Canal nukeado con éxito.`' });
-                        });
+        const embed = new MessageEmbed()
+            .setColor('#ff0000')
+            .setTitle('<:Alert:1278748088789504082> ¡Cuidado!')
+            .setDescription('Estás a punto de recrear este canal. Si estás seguro de continuar, haz clic en el botón "Confirmar". Si no, haz clic en "Cancelar".')
+            .setFooter('Esta acción no se puede deshacer.');
+        const row = new MessageActionRow()
+            .addComponents(
+                new MessageButton()
+                    .setCustomId('confirmar')
+                    .setLabel('Confirmar')
+                    .setStyle('SUCCESS'),
+                new MessageButton()
+                    .setCustomId('cancelar')
+                    .setLabel('Cancelar')
+                    .setStyle('DANGER')
+            );
+        const confirmMessage = await message.reply({ embeds: [embed], components: [row] });
+        const filter = i => i.user.id === message.author.id;
+        const collector = confirmMessage.createMessageComponentCollector({ filter, time: 15000 });
+
+        collector.on('collect', async interaction => {
+            if (interaction.customId === 'confirmar') {
+                message.channel.clone({ parent: message.channel.parentId, position: message.channel.position }).then(nuke => {
+                    message.channel.delete();
+                    nuke.setPosition(message.channel.position).then(() => {
+                        const successEmbed = new MessageEmbed()
+                            .setColor('#F0F0F0')
+                            .setDescription('<:Checkmark:1278179814339252299> | El canal ha sido nukeado con éxito.')
+                            .setImage('https://media1.tenor.com/m/-awrYWaCuvoAAAAd/explosion-explode.gif')
+                            .setFooter('Acción completada.');
+                        nuke.send({ embeds: [successEmbed] });
                     });
-                    collector.stop();
-                }else{
-                    collector.stop();
-                }
+                });
+                collector.stop();
+            } else if (interaction.customId === 'cancelar') {
+                message.channel.send('La acción ha sido cancelada.');
+                collector.stop();
             }
         });
         collector.on('end', () => {
-            message.channel.send({ content: "Colector detenido." });
+            confirmMessage.edit({ content: 'La acción ha expirado o ha sido cancelada.', components: [] });
         });
-	},
+    },
 };
