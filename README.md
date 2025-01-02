@@ -1,3 +1,6 @@
+# Outdated project
+NearSecurity pasará a ser Rymbo este 1 de febrero o antes. Disponible en nuestro soporte.
+
 # NearSecurity
 Bot multifunción vanguardista basado en SP Agency, cumpliendo con el TOS y license del mismo.
 
